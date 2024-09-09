@@ -1,0 +1,23 @@
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat_name_block {
+    display: block;
+    margin: auto;
+    padding-top: 10em;
+    width: 30em;
+}
+
+.new_chat_btn {
+    display: block;
+    margin: 5em auto;
+    background-color: cadetblue;
+    color: white;
+    padding-left: 1em;
+    padding-right: 1em;
+    border-radius: 1em;
+    cursor: pointer;
+    font-weight: bold;
+}
