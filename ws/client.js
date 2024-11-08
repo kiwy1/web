@@ -1,47 +1,32 @@
-const { WebSocket } = require("ws");
-const readline = require("readline");
+const readline = require("node:readline");
+
+const { ChatClient } = require("./Client/ChatClient");
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-const wsClientFactory = (sessionId = null, name) => {
-    const ws = new WebSocket("ws://localhost:8080");
+rl.question("Whats your name? ", name => {
+    rl.close();
+    init(name);
+})
 
-    ws.on("open", function open() {
-        console.log(`Connected to server as ${name}`);
+const init = (name) => {
+    const client = new ChatClient({ url: "ws://localhost:8080", username: name });
+    
+    client.init();
 
-        ws.send(JSON.stringify({
-            type: "session_init",
-            sessionId: sessionId,
-            name: name
-        }));
-
-        rl.on("line", (input) => {
-            ws.send(JSON.stringify({
-                type: "message",
-                name: name,
-                message: input
-            }));
-        });
+    const chatInput = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
     });
 
-    ws.on("message", function message(data) {
-        const parsedData = JSON.parse(data);
-        if (parsedData.type === "session_confirm") {
-            console.log(`Session confirmed. Your session ID: ${parsedData.sessionId}`);
-        } else if (parsedData.type === "message") {
-            console.log(`${parsedData.from} says: ${parsedData.message}`);
+    chatInput.on("line", (input) => {
+        if (input.trim().toLowerCase() === "exit") {
+            chatInput.close();
+        } else {
+            client.send(input);
         }
     });
-
-    ws.on("error", console.error);
-    ws.on("close", () => {
-        console.log(`Disconnected from server`);
-    });
-}
-
-const sessionId = null;
-const name = "User";
-wsClientFactory(sessionId, name);
+};
