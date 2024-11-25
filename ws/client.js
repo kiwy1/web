@@ -7,13 +7,15 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-rl.question("Whats your name? ", name => {
-    rl.close();
-    init(name);
+rl.question("Whats your encrypt key? ", val => {
+    rl.question("Whats your name? ", name => {
+        rl.close();
+        init(name, val);
+    })
 })
 
-const init = (name) => {
-    const client = new ChatClient({ url: "ws://localhost:8080", username: name });
+const init = (name, key) => {
+    const client = new ChatClient({ url: "ws://localhost:8080", username: name, key: key });
     
     client.init();
 
