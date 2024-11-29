@@ -6,21 +6,32 @@ function encrypt(text, key) {
         key = crypto.createHash('sha256').update(key).digest();
     }
 
-    const cipher = crypto.createCipheriv('aes-256-cbc', key, Buffer.alloc(16, 0));
+    const iv = crypto.randomBytes(16);
+
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
     let encrypted = cipher.update(text);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return encrypted.toString('hex');
+
+    return {
+        iv: iv.toString("hex"),
+        encryptedData: encrypted.toString("hex")
+    };
 }
 
-function decrypt(encryptedText, key) {
+function decrypt(encryptedObject, key) {
     if (key.length !== 32) {
         key = crypto.createHash('sha256').update(key).digest();
     }
 
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.alloc(16, 0));
-    let decrypted = decipher.update(Buffer.from(encryptedText, 'hex'));
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
+    const iv = Buffer.from(encryptedObject.iv, "hex");
+    const encryptedText = encryptedObject.encryptedData;
+
+    const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
+
+    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+
+    return decrypted;
 }
 
 class ChatClient {
@@ -53,9 +64,8 @@ class ChatClient {
 
         switch (parsedData.type) {
             case "message":
-                const { message, sender } = parsedData.data;
-                const decryptedMessage = decrypt(message.message, this.encryptionKey);
-                console.log(sender + " >>: " + decryptedMessage);
+                const decryptedMessage = decrypt(parsedData.data.message, this.encryptionKey);
+                console.log(parsedData.data.sender + " >>: " + decryptedMessage);
                 break;
             case "options":
                 this.setOptions(parsedData);
@@ -75,10 +85,7 @@ class ChatClient {
         const msgObject = {
             type: "message",
             sessionId: this.sessionId,
-            data: {
-                message: encryptedData,
-                sender: this.username
-            }
+            data: encryptedData
         };
 
         this.ws.send(JSON.stringify(msgObject));
